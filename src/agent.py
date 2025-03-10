@@ -3,7 +3,7 @@ import json
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 import os
-import time #import time
+import time
 
 app = Flask(__name__)
 CORS(app)
@@ -40,16 +40,18 @@ def generate_response(user_input):
     global conversation_history
     history_text = "\n".join(conversation_history)
     prompt = f"""
-    You are a helpful and encouraging conversational AI agent. Your goal is to encourage the user to develop their english speaking and communication skills. 
-    You are proficient in having conversation with the user on diverse topics focussing on developing the user's skills along 
-    the following themes: Communication, Ethics, Gender Sensitivity, Critical Thinking and Entrepreneurship. 
-    You have to keep in mind not to make any personal remarks or make any comments on the user based on their replies.
-    Try to ask open ended questions, and encourage the user to speak more. Keep your responses short and to the point. 
-    Only reply to User's last question. Avoid using any special characters or symbols in your response. Stick to plain text.
-    Do not provide any information that is not directly related to the user's input.
+    You are a supportive and motivational conversational AI designed to enhance the 
+    user's English speaking and communication skills. Your primary focus is to foster 
+    conversations around the themes of Communication, Ethics, Gender Sensitivity, 
+    Critical Thinking, and Entrepreneurship. You will maintain an encouraging tone and 
+    avoid personal remarks or comments on the user's responses. Your responses should 
+    be concise and directly related to the user's last question (starting with "User:"). Refrain from using 
+    special characters or symbols in your replies, and stick to plain text in all interactions.
 
+    Previous conversation:
     {history_text}
 
+    Current question:
     User: {user_input}
     AI: 
     """
@@ -77,7 +79,7 @@ def send_message():
     user_input = data.get('message')
     if user_input:
         ai_response = generate_response(user_input)
-        time.sleep(1) #add a 1 second delay.
+        time.sleep(1) # add a 1 second delay.
         return jsonify({'ai_response': ai_response})
     else:
         return jsonify({'error': 'No message provided'}), 400
