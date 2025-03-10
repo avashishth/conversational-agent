@@ -17,7 +17,7 @@ recognizer = vosk.KaldiRecognizer(model, 16000)
 
 # Initialize PyAudio
 p = pyaudio.PyAudio()
-stream = p.open(format=pyaudio.paInt16, channels=1, rate=16000, input=True, frames_per_buffer=8000)
+stream = p.open(format=pyaudio.paInt16, channels=1, rate=16000, input=True, frames_per_buffer=16000) #Increased buffer
 stream.start_stream()
 
 # Initialize LLM (TinyLlama example)
@@ -29,7 +29,7 @@ engine = pyttsx3.init()
 
 def speech_to_text():
     while True:
-        data = stream.read(4000)
+        data = stream.read(4000) #Reduced read buffer.
         if len(data) == 0:
             break
         if recognizer.AcceptWaveform(data):
@@ -37,6 +37,7 @@ def speech_to_text():
             text = eval(result)["text"]
             if text:
                 return text
+        time.sleep(0.005) #added a small sleep.
 
 def generate_response(user_input):
     inputs = tokenizer.encode(user_input, return_tensors="pt")
