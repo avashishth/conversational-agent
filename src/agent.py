@@ -17,10 +17,13 @@ conversation_history = [
     }
 ]
 
-def query(payload):
+def query(model_name, payload):
+    model_config = {
+        "api_url": OLLAMA_API_URL
+    }
     try:
         print(f"Sending payload: {json.dumps(payload)}")
-        response = requests.post(OLLAMA_API_URL, json=payload)
+        response = requests.post(model_config["api_url"], json=payload)
         response.raise_for_status()
         print(f"API response status code: {response.status_code}")
         try:
@@ -38,41 +41,29 @@ def query(payload):
         print(f"Error: An unexpected error occurred: {e}")
         return {"error": f"An unexpected error occurred: {e}"}
 
-def generate_response(user_input):
-    global conversation_history
-    conversation_history.append({"role": "user", "content": user_input})
-    print(f"Conversation history: {json.dumps(conversation_history)}")
-    output = query({
-        "model": "deepseek-r1:1.5b",
-        "messages": conversation_history,
-        "stream": False
-    })
-    print(f"API output: {json.dumps(output)}")
-    
-    if isinstance(output, dict) and "message" in output:
-        message_content = output["message"]["content"]
-        answer_index = message_content.find("</think>")
-        if answer_index != -1:
-            ai_response = message_content[answer_index + len("Answer: "):].strip()
-        else:
-            ai_response = "Error: Could not find 'Answer:' in the response."
-        conversation_history.append({"role": "assistant", "content": ai_response})
-        if len(conversation_history) > 10:
-            conversation_history = conversation_history[-10:]
-        return ai_response
-    else:
-        return "Error: Could not generate response."
-
 @app.route('/send_message', methods=['POST'])
 def send_message():
     data = request.get_json()
+    print(f"Received data: {json.dumps(data)}")
     user_input = data.get('message')
-    if user_input:
-        ai_response = generate_response(user_input)
-        time.sleep(1) # add a 1 second delay.
-        return jsonify({'ai_response': ai_response})
-    else:
+    model_name = data.get('model')
+    
+    if not user_input:
         return jsonify({'error': 'No message provided'}), 400
+    
+    if not model_name:
+        return jsonify({'error': 'No model name provided'}), 400
+
+    if model_name == 'deepseek-r1:1.5b':
+        from models.deepseek_r1 import generate_response
+    elif model_name == 'llama3-chatqa':
+        from models.llama3_chatqa import generate_response
+    else:
+        return jsonify({'error': 'Invalid model name'}), 400
+
+    ai_response = generate_response(user_input)
+    time.sleep(1) # add a 1 second delay.
+    return jsonify({'ai_response': ai_response})
 
 if __name__ == '__main__':
     app.run(debug=True, port=5000)
