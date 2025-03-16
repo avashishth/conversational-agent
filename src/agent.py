@@ -8,17 +8,19 @@ import time
 app = Flask(__name__)
 CORS(app)
 
-HUGGINGFACE_API_TOKEN = os.getenv("HUGGINGFACE_API_TOKEN")
-HUGGINGFACE_API_URL = "https://api-inference.huggingface.co/models/google/gemma-2b-it"
+OLLAMA_API_URL = "http://localhost:11434/api/chat"
 
-headers = {"Authorization": f"Bearer {HUGGINGFACE_API_TOKEN}"}
-
-conversation_history = []
+conversation_history = [
+    {
+        "role": "system", 
+        "content": "You are a supportive and motivational conversational AI designed to enhance the user's English speaking and communication skills. Your primary focus is to foster conversations around the themes of Communication, Ethics, Gender Sensitivity, Critical Thinking, and Entrepreneurship. You will maintain an encouraging tone and avoid personal remarks or comments on the user's responses. Your responses should be concise and directly related to the user's last question (starting with 'User:'). Refrain from using special characters or symbols in your replies, and stick to plain text in all interactions. Always provide a direct and concise answer to the user's input. Do not include any internal reasoning or '<think>' sections in your replies. Focus solely on responding to the user's question or prompt."
+    }
+]
 
 def query(payload):
     try:
         print(f"Sending payload: {json.dumps(payload)}")
-        response = requests.post(HUGGINGFACE_API_URL, headers=headers, json=payload)
+        response = requests.post(OLLAMA_API_URL, json=payload)
         response.raise_for_status()
         print(f"API response status code: {response.status_code}")
         try:
@@ -38,35 +40,23 @@ def query(payload):
 
 def generate_response(user_input):
     global conversation_history
-    history_text = "\n".join(conversation_history)
-    prompt = f"""
-    You are a supportive and motivational conversational AI designed to enhance the 
-    user's English speaking and communication skills. Your primary focus is to foster 
-    conversations around the themes of Communication, Ethics, Gender Sensitivity, 
-    Critical Thinking, and Entrepreneurship. You will maintain an encouraging tone and 
-    avoid personal remarks or comments on the user's responses. Your responses should 
-    be concise and directly related to the user's last question (starting with "User:"). Refrain from using 
-    special characters or symbols in your replies, and stick to plain text in all interactions.
-
-    Previous conversation:
-    {history_text}
-
-    Current question:
-    User: {user_input}
-    AI: 
-    """
+    conversation_history.append({"role": "user", "content": user_input})
+    print(f"Conversation history: {json.dumps(conversation_history)}")
     output = query({
-        "inputs": prompt,
+        "model": "deepseek-r1:1.5b",
+        "messages": conversation_history,
+        "stream": False
     })
-    if isinstance(output, list) and output:
-        full_response = output[0]['generated_text']
-        parts = full_response.split("AI: ")
-        if isinstance(parts, list) and len(parts) > 1:
-            ai_response = parts[-1].strip()
+    print(f"API output: {json.dumps(output)}")
+    
+    if isinstance(output, dict) and "message" in output:
+        message_content = output["message"]["content"]
+        answer_index = message_content.find("</think>")
+        if answer_index != -1:
+            ai_response = message_content[answer_index + len("Answer: "):].strip()
         else:
-            ai_response = full_response.strip()
-        conversation_history.append(f"User: {user_input}")
-        conversation_history.append(f"AI: {ai_response}")
+            ai_response = "Error: Could not find 'Answer:' in the response."
+        conversation_history.append({"role": "assistant", "content": ai_response})
         if len(conversation_history) > 10:
             conversation_history = conversation_history[-10:]
         return ai_response

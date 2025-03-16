@@ -100,3 +100,6 @@ This Flask application provides a backend for a conversational AI agent, utilizi
 * The conversation history is stored in memory and will be lost when the application is restarted.
 * The model used for the API calls can be changed by modifying the `HUGGINGFACE_API_URL` variable.
 * The prompt can be changed to customize the agent's behaviour.
+
+## Ollama
+```ollama run deepseek-r1:1.5b```
