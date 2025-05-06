@@ -1,0 +1,21 @@
+' Sequence diagram for user authentication flow
+@startuml
+actor User
+participant "Mobile App\n(React Native)" as MobileApp
+participant "Authentication API\n(Cloud Functions/Cloud Run)" as AuthAPI
+database "Cloud SQL\n(Users Table)" as UsersDB
+
+User -> MobileApp: Initiates Sign-in (Google/Apple)
+MobileApp -> AuthAPI: Sends Social ID Token
+AuthAPI -> AuthAPI: Verifies Token (with Google/Apple)
+AuthAPI -> UsersDB: Queries User by Social ID
+alt User Found
+  UsersDB --> AuthAPI: User Data
+  AuthAPI -> MobileApp: Authentication Success
+  MobileApp -> MobileApp: Navigates to Theme Selection
+else User Not Found
+  UsersDB --> AuthAPI: User Not Found
+  AuthAPI -> MobileApp: Authentication Failed / Prompt for Registration (Optional)
+end
+
+@enduml

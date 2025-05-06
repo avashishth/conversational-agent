@@ -1,0 +1,54 @@
+@startuml
+package "Mobile Application (React Native)" {
+  [Authentication Screen]
+  [Theme Selection Screen]
+  [Chat Screen]
+  [Voice Input]
+  [Audio Output]
+}
+
+package "Google Cloud Platform" {
+  package "Authentication Service" {
+    [Authentication API (Cloud Functions/Cloud Run)]
+  }
+  package "Backend Service" {
+    [Chat API (Cloud Run)]
+    [Voice-to-Text Service]
+    [LLM (Gemini)]
+    [Text-to-Speech Service]
+  }
+  package "Data Storage" {
+    database "Cloud SQL" as RDBMS {
+      [Users Table]
+    }
+    database "Firestore / Cloud Spanner (NoSQL)" as NoSQLDB {
+      [Conversations Collection]
+    }
+    storage "Cloud Storage" as ObjectStorage {
+      [Audio Files Bucket]
+    }
+  }
+}
+
+[Authentication Screen] --> [Authentication API (Cloud Functions/Cloud Run)] : Authenticates User
+[Authentication API (Cloud Functions/Cloud Run)] --> [Users Table] : Verifies User
+[Authentication API (Cloud Functions/Cloud Run)] --> [Theme Selection Screen] : Redirects on Success
+
+[Theme Selection Screen] --> [Chat Screen] : Selects Theme
+
+[Chat Screen] --> [Voice Input] : Initiates Voice Input
+[Voice Input] --> [Chat API (Cloud Run)] : Sends Audio
+
+[Chat API (Cloud Run)] --> [Voice-to-Text Service] : Converts Voice
+[Voice-to-Text Service] --> [LLM (Gemini)] : Passes Text
+[LLM (Gemini)] --> [Chat API (Cloud Run)] : Generates Response
+[Chat API (Cloud Run)] --> [Text-to-Speech Service] : Converts Text
+[Text-to-Speech Service] --> [Chat API (Cloud Run)] : Returns Audio File Link
+[Chat API (Cloud Run)] --> [Audio Files Bucket] : Stores Audio
+[Chat API (Cloud Run)] --> [Conversations Collection] : Stores Conversation
+[Chat API (Cloud Run)] --> [Audio Output] : Sends Audio File Link
+[Audio Output] --> [Chat Screen] : Plays Audio
+
+[Chat Screen] --> [Conversations Collection] : Displays Conversation
+
+@enduml

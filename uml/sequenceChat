@@ -1,0 +1,29 @@
+@startuml
+actor User
+participant "Mobile App\n(React Native)" as MobileApp
+participant "Chat API\n(Cloud Run)" as ChatAPI
+participant "Voice-to-Text\nService" as VTT
+participant "LLM (Gemini)" as LLM
+participant "Text-to-Speech\nService" as TTS
+database "Cloud Storage\n(Audio Files Bucket)" as AudioBucket
+database "Firestore / Cloud Spanner\n(Conversations Collection)" as ConvDB
+
+User -> MobileApp: Selects Theme
+MobileApp -> MobileApp: Displays Initial Question
+User -> MobileApp: Initiates Voice Recording
+MobileApp -> MobileApp: Records Audio
+MobileApp -> ChatAPI: Sends User ID, Conversation ID, Audio Data
+ChatAPI -> VTT: Sends Audio Data
+VTT --> ChatAPI: Returns Text
+ChatAPI -> LLM: Sends User ID, Conversation ID, Text
+LLM --> ChatAPI: Returns Text Response
+ChatAPI -> TTS: Sends Text Response
+TTS --> ChatAPI: Returns Audio File Link
+ChatAPI -> AudioBucket: Stores Audio Data
+AudioBucket --> ChatAPI: Returns Audio Storage URL
+ChatAPI -> ConvDB: Stores Conversation Turn (User Text, LLM Text, Audio URL)
+ConvDB --> ChatAPI: Acknowledgment
+ChatAPI -> MobileApp: Sends Audio File Link
+MobileApp -> MobileApp: Plays Audio from Link
+
+@enduml
